@@ -1,0 +1,179 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Product extends Model
+{
+    use HasFactory;
+    protected $table = 'products';
+    protected $fillable = [
+        'meta_title',
+        'meta_keyword',
+        'meta_description',
+        'slug',
+        'name',
+        'description',
+        'status',
+        'brand',
+        'category_id',
+        'popular',
+        'featured',
+        'selling_price',
+        'original_price',
+        'quantity',
+        'image',
+
+
+    ];
+}
+
+
+
+
+
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create('products', function (Blueprint $table) {
+            $table->id();
+            $table->integer('category_id');
+            $table->string('meta_title')->nullable();
+            $table->mediumText('meta_keyword')->nullable();
+            $table->mediumText('meta_description')->nullable();
+            $table->string('slug');
+            $table->string('name');
+            $table->string('image')->nullable();
+            $table->string('selling_price');
+            $table->string('original_price');
+            $table->string('quantity');
+            $table->string('brand');
+            $table->longText('description')->nullable();
+            $table->tinyInteger('status')->default('0');
+            $table->tinyInteger('featured')->default('0')->nullable();
+            $table->tinyInteger('popular')->default('0')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::dropIfExists('products');
+    }
+};
+
+
+
+
+
+
+
+
+
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\Product;
+use Illuminate\Support\Facades\Validator;
+class ProductsController extends Controller
+{
+    public function store(Request $request){
+
+        $validator = Validator::make($request->all(),[
+            'slug' => 'required|max:191',
+            'name' => 'required|max:191',
+            'meta_title' => 'required|max:191',
+            'image' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+        ]);
+
+        if($validator->fails()){
+            return response()->json([
+                'status' => 422,
+                'product_errors' => $validator->messages()
+            ]);
+
+        }else{
+
+        $product = new Product;
+        $product->category_id = (int)($request->input('category_id'));
+        $product->meta_title = $request->input('meta_title');
+        $product->meta_keyword = $request->input('meta_keyword');
+        $product->meta_description = $request->input('meta_description');
+        $product->slug = $request->input('slug');
+        $product->name = $request->input('name');
+        $product->description = $request->input('description');
+        $product->selling_price = $request->input('selling_price');
+        $product->original_price = $request->input('original_price');
+        $product->quantity = $request->input('quantity');
+        $product->brand = $request->input('brand');
+        $product->status = $request->input('status') == true ? '1' : '0';
+        $product->featured = $request->input('featured') == true ? '1' : '0';
+        $product->popular = $request->input('popular') == true ? '1' : '0';
+
+        if($request->hasFile('image')){
+
+            $file = $request->file('image');
+            $extension = $file->getClientOriginalExtension();
+            $filename = time().'.'.$extension;
+            $file->move('uploads/product/',$filename);
+            $product->image = 'uploads/product/'.$filename;
+
+        }
+
+        $product->save();
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Product Added successfully'
+        ]);
+
+    }
+
+}
+
+public function add(Request $request){
+
+    if($request->hasFile('image')){
+
+        $file = $request->file('image');
+        $extension = $file->getClientOriginalExtension();
+        $filename = time().'.'.$extension;
+        $file->move('uploads/product/',$filename);
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Product Added successfully'
+        ]);
+
+    }else{
+        return response()->json([
+            'status' => 400,
+            'message' => 'No File'
+        ]);
+    }
+}
+
+}
